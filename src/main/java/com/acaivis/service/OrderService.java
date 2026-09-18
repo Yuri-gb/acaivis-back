@@ -28,7 +28,6 @@ public class OrderService {
     private final ProductRepository products;
     private final DeliveryZoneRepository zones;
     private final OrderStatusHistoryRepository history;
-    private final EmailService email;
     private final OrderEmailAutomationService emailAutomation;
     private final MercadoPagoService mercadoPago;
     private final DeliveryService delivery;
@@ -38,7 +37,6 @@ public class OrderService {
             ProductRepository p,
             DeliveryZoneRepository z,
             OrderStatusHistoryRepository h,
-            EmailService e,
             OrderEmailAutomationService emailAutomation,
             MercadoPagoService mercadoPago,
             DeliveryService delivery
@@ -47,7 +45,6 @@ public class OrderService {
         products = p;
         zones = z;
         history = h;
-        email = e;
         this.emailAutomation = emailAutomation;
         this.mercadoPago = mercadoPago;
         this.delivery = delivery;
