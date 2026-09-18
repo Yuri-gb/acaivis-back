@@ -103,6 +103,9 @@ public class Order {
     @Column(name = "pix_ticket_url", length = 2000)
     private String pixTicketUrl;
 
+    @Column(name = "stock_released", nullable = false)
+    private boolean stockReleased;
+
     @Column(name = "delivery_route_order")
     private Integer deliveryRouteOrder;
 
@@ -340,6 +343,9 @@ public class Order {
     public void setPixQrCodeBase64(String v) { pixQrCodeBase64 = v; }
     public String getPixTicketUrl() { return pixTicketUrl; }
     public void setPixTicketUrl(String v) { pixTicketUrl = v; }
+
+    public boolean isStockReleased() { return stockReleased; }
+    public void setStockReleased(boolean v) { stockReleased = v; }
 
     public String getNotes() {
         return notes;
