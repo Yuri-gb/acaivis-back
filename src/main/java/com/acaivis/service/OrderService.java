@@ -6,6 +6,7 @@ import com.acaivis.exception.*;
 import com.acaivis.model.*;
 import com.acaivis.repository.*;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -348,6 +349,8 @@ public class OrderService {
                 o.getTotal(),
                 o.getDeliveryZoneName(),
                 address(o),
+                o.getPaymentMethod(),
+                o.isPaymentConfirmed(),
                 o.getItems()
                         .stream()
                         .map(i ->
@@ -406,6 +409,190 @@ public class OrderService {
                 .toList();
     }
 
+    @Transactional
+    public void cancelarPagamentoFalho(Long orderId) {
+        Order order = orders.findById(orderId).orElse(null);
+        if (order == null || order.getStatus() == OrderStatus.PAID || order.getStatus() == OrderStatus.CANCELLED) {
+            return;
+        }
+        order.setStatus(OrderStatus.CANCELLED);
+        order.setPaymentConfirmed(false);
+        releaseStockIfNeeded(order);
+        Order saved = orders.save(order);
+        history.save(new OrderStatusHistory(saved, OrderStatus.CANCELLED, LocalDateTime.now()));
+    }
+
+    @Scheduled(fixedDelay = 30000)
+    @Transactional
+    public void expirarPixPendentes() {
+        LocalDateTime now = LocalDateTime.now();
+        orders.findAllByStatusAndPaymentMethodAndPaymentExpiresAtLessThanEqualOrderByPaymentExpiresAtAsc(
+                OrderStatus.PENDING_PAYMENT,
+                PaymentMethod.PIX,
+                now
+        ).forEach(o -> {
+                    o.setStatus(OrderStatus.CANCELLED);
+                    o.setPaymentConfirmed(false);
+                    o.setPaymentStatus("expired");
+                    releaseStockIfNeeded(o);
+                    Order saved = orders.save(o);
+                    history.save(new OrderStatusHistory(saved, OrderStatus.CANCELLED, now));
+                });
+    }
+
+    @Transactional
+    public void processarWebhookMercadoPago(String mercadoPagoOrderId) {
+        if (mercadoPagoOrderId == null || mercadoPagoOrderId.isBlank()) {
+            return;
+        }
+
+        Order order = orders.findByMercadoPagoOrderId(mercadoPagoOrderId)
+                .orElse(null);
+
+        if (order == null) {
+            return;
+        }
+
+        Map<String, Object> mpOrder = mercadoPago.buscarOrder(mercadoPagoOrderId);
+        if (mpOrder.isEmpty()) {
+            return;
+        }
+
+        Map<String, Object> transaction = firstPayment(mpOrder);
+        Map<String, Object> paymentMethod = map(transaction.get("payment_method"));
+
+        String orderStatus = string(mpOrder.get("status"));
+        String orderStatusDetail = string(mpOrder.get("status_detail"));
+        String paymentId = string(transaction.get("id"));
+        String paymentStatus = string(transaction.get("status"));
+        String paymentStatusDetail = string(transaction.get("status_detail"));
+
+        order.setPaymentStatus(
+                paymentStatus != null ? paymentStatus : orderStatus
+        );
+        order.setPaymentStatusDetail(
+                paymentStatusDetail != null ? paymentStatusDetail : orderStatusDetail
+        );
+
+        if (paymentId != null) {
+            order.setMercadoPagoPaymentId(paymentId);
+        }
+
+        if (order.getPaymentMethod() == PaymentMethod.PIX) {
+            order.setPixQrCode(string(paymentMethod.get("qr_code")));
+            order.setPixQrCodeBase64(string(paymentMethod.get("qr_code_base64")));
+            order.setPixTicketUrl(string(paymentMethod.get("ticket_url")));
+
+            if (order.getPaymentExpiresAt() == null
+                    && order.getMercadoPagoOrderId() != null) {
+                order.setPaymentExpiresAt(order.getCreatedAt().plusMinutes(30));
+            }
+        }
+
+        String effectiveStatus = paymentStatus != null ? paymentStatus : orderStatus;
+
+        if (order.getPaymentMethod() == PaymentMethod.PIX
+                && order.getPaymentExpiresAt() != null
+                && !order.getPaymentExpiresAt().isAfter(LocalDateTime.now())) {
+            if (order.getStatus() != OrderStatus.CANCELLED) {
+                order.setStatus(OrderStatus.CANCELLED);
+                order.setPaymentConfirmed(false);
+                order.setPaymentStatus("expired");
+                releaseStockIfNeeded(order);
+                orders.save(order);
+                history.save(new OrderStatusHistory(order, OrderStatus.CANCELLED, LocalDateTime.now()));
+            }
+            return;
+        }
+
+        if (isPaid(effectiveStatus, orderStatus)) {
+            if (order.getStatus() == OrderStatus.CANCELLED || order.isStockReleased()) {
+                return;
+            }
+            if (!order.isPaymentConfirmed()) {
+                order.setPaymentConfirmed(true);
+                order.setStatus(OrderStatus.PAID);
+                orders.save(order);
+                history.save(new OrderStatusHistory(order, OrderStatus.PAID, LocalDateTime.now()));
+                if (order.getCustomerEmail() != null) {
+                    email.sendOrderConfirmation(order);
+                }
+            }
+            return;
+        }
+
+        if (isExpiredOrCancelled(effectiveStatus, orderStatus)) {
+            if (order.getStatus() != OrderStatus.CANCELLED) {
+                order.setStatus(OrderStatus.CANCELLED);
+                order.setPaymentConfirmed(false);
+                releaseStockIfNeeded(order);
+                orders.save(order);
+                history.save(new OrderStatusHistory(order, OrderStatus.CANCELLED, LocalDateTime.now()));
+            }
+            return;
+        }
+
+        if (order.getStatus() != OrderStatus.PAID
+                && order.getStatus() != OrderStatus.CANCELLED) {
+            order.setStatus(OrderStatus.PENDING_PAYMENT);
+            orders.save(order);
+        }
+    }
+
+    private void releaseStockIfNeeded(Order order) {
+        if (order.isStockReleased()) {
+            return;
+        }
+
+        order.getItems().forEach(item -> {
+            Product product = item.getProduct();
+            product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
+            if (product.getStockQuantity() > 0) {
+                product.setAvailable(true);
+            }
+            products.save(product);
+        });
+
+        order.setStockReleased(true);
+    }
+
+    private boolean isPaid(String paymentStatus, String orderStatus) {
+        return "processed".equalsIgnoreCase(paymentStatus)
+                || "approved".equalsIgnoreCase(paymentStatus)
+                || "processed".equalsIgnoreCase(orderStatus)
+                || "accredited".equalsIgnoreCase(paymentStatus);
+    }
+
+    private boolean isExpiredOrCancelled(String paymentStatus, String orderStatus) {
+        return "expired".equalsIgnoreCase(paymentStatus)
+                || "canceled".equalsIgnoreCase(paymentStatus)
+                || "cancelled".equalsIgnoreCase(paymentStatus)
+                || "expired".equalsIgnoreCase(orderStatus)
+                || "canceled".equalsIgnoreCase(orderStatus)
+                || "cancelled".equalsIgnoreCase(orderStatus);
+    }
+
+    private Map<String, Object> firstPayment(Map<String, Object> order) {
+        Map<String, Object> transactions = map(order.get("transactions"));
+        Object payments = transactions.get("payments");
+        if (payments instanceof List<?> list && !list.isEmpty()) {
+            return map(list.get(0));
+        }
+        return Map.of();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> map(Object value) {
+        if (value instanceof Map<?, ?> map) {
+            return (Map<String, Object>) map;
+        }
+        return Map.of();
+    }
+
+    private String string(Object value) {
+        return value == null ? null : String.valueOf(value);
+    }
+
     private Long nextComandaNumber() {
 
         return ((Number)
@@ -431,7 +618,7 @@ public class OrderService {
         do {
 
             StringBuilder b =
-                    new StringBuilder("AC-");
+                    new StringBuilder("AC");
 
             for (int i = 0; i < 6; i++)
                 b.append(

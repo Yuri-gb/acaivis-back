@@ -2,6 +2,7 @@ package com.acaivis.repository;
 
 import com.acaivis.model.Order;
 import com.acaivis.model.OrderStatus;
+import com.acaivis.model.PaymentMethod;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,7 +15,14 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findAllByOrderByCreatedAtDesc();
     long countByStatus(OrderStatus status);
     Optional<Order> findByTrackingCode(String trackingCode);
+    Optional<Order> findByMercadoPagoOrderId(String mercadoPagoOrderId);
     List<Order> findAllByCustomerPhoneOrderByCreatedAtDesc(String customerPhone);
+
+    List<Order> findAllByStatusAndPaymentMethodAndPaymentExpiresAtLessThanEqualOrderByPaymentExpiresAtAsc(
+            OrderStatus status,
+            PaymentMethod paymentMethod,
+            java.time.LocalDateTime expiresAt
+    );
 
     List<Order> findAllByStatusInOrderByDeliveryRouteOrderAscCreatedAtAsc(Collection<OrderStatus> statuses);
 

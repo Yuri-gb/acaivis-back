@@ -3,22 +3,20 @@ package com.acaivis.service;
 import com.acaivis.dto.payment.MercadoPagoPaymentRequest;
 import com.acaivis.dto.payment.MercadoPagoPaymentResponse;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
-import java.util.Map;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.*;
 
 @Service
 public class MercadoPagoService {
 
-    private static final String ORDERS_URL =
-            "https://api.mercadopago.com/v1/orders";
+    private static final String ORDERS_URL = "https://api.mercadopago.com/v1/orders";
 
     private final RestTemplate restTemplate;
 
@@ -34,107 +32,127 @@ public class MercadoPagoService {
             String referencia,
             MercadoPagoPaymentRequest pagamento
     ) {
+        if (accessToken == null || accessToken.isBlank()) {
+            throw new IllegalStateException("MERCADOPAGO_ACCESS_TOKEN não configurado.");
+        }
+
+        boolean pix = "pix".equalsIgnoreCase(pagamento.paymentMethodId());
 
         HttpHeaders headers = new HttpHeaders();
-
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(accessToken);
-        headers.set(
-                "X-Idempotency-Key",
-                UUID.randomUUID().toString()
-        );
+        headers.set("X-Idempotency-Key", pagamento.idempotencyKey() == null || pagamento.idempotencyKey().isBlank() ? UUID.randomUUID().toString() : pagamento.idempotencyKey());
 
-        Map<String, Object> paymentMethod = new java.util.HashMap<>();
-
-        paymentMethod.put(
-                "id",
-                pagamento.paymentMethodId()
-        );
-
+        Map<String, Object> paymentMethod = new HashMap<>();
+        paymentMethod.put("id", pix ? "pix" : pagamento.paymentMethodId());
         paymentMethod.put(
                 "type",
-                pagamento.paymentMethodType()
+                pix ? "bank_transfer" : pagamento.paymentMethodType()
         );
 
-        if (pagamento.token() != null &&
-                !pagamento.token().isBlank()) {
-
-            paymentMethod.put(
-                    "token",
-                    pagamento.token()
-            );
+        if (!pix && pagamento.token() != null && !pagamento.token().isBlank()) {
+            paymentMethod.put("token", pagamento.token());
         }
 
-        if (pagamento.installments() != null) {
-
-            paymentMethod.put(
-                    "installments",
-                    pagamento.installments()
-            );
+        if (!pix && pagamento.installments() != null) {
+            paymentMethod.put("installments", pagamento.installments());
         }
 
-        Map<String, Object> payment = Map.of(
-                "amount", valorTotal,
-                "payment_method", paymentMethod
-        );
+        Map<String, Object> payment = new HashMap<>();
+        payment.put("amount", valorTotal);
+        payment.put("payment_method", paymentMethod);
 
-        Map<String, Object> transactions = Map.of(
-                "payments",
-                java.util.List.of(payment)
-        );
+        if (pix) {
+            payment.put("expiration_time", "PT30M");
+        }
 
-        Map<String, Object> payer = Map.of(
-                "email",
-                pagamento.payerEmail()
-        );
+        Map<String, Object> body = new HashMap<>();
+        body.put("type", "online");
+        body.put("processing_mode", "automatic");
+        body.put("total_amount", valorTotal.toPlainString());
+        body.put("external_reference", referencia);
+        body.put("payer", Map.of("email", pagamento.payerEmail()));
+        body.put("transactions", Map.of("payments", List.of(payment)));
 
-        Map<String, Object> body = Map.of(
-                "type", "online",
-                "processing_mode", "automatic",
-                "total_amount", valorTotal,
-                "external_reference", referencia,
-                "payer", payer,
-                "transactions", transactions
-        );
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
-        HttpEntity<Map<String, Object>> request =
-                new HttpEntity<>(body, headers);
-
-        var response = restTemplate.exchange(
+        ResponseEntity<Map> response = restTemplate.exchange(
                 ORDERS_URL,
                 HttpMethod.POST,
                 request,
                 Map.class
         );
 
-        Map<String, Object> responseBody =
-                response.getBody();
-
-        if (responseBody == null) {
-            throw new IllegalStateException(
-                    "Mercado Pago não retornou uma resposta."
-            );
+        Map<String, Object> responseBody = response.getBody();
+        if (responseBody == null || responseBody.get("id") == null) {
+            throw new IllegalStateException("Mercado Pago não retornou uma order válida.");
         }
 
-        String orderId =
-                String.valueOf(responseBody.get("id"));
+        Map<String, Object> paymentResponse = firstPayment(responseBody);
+        Map<String, Object> paymentMethodResponse = map(paymentResponse.get("payment_method"));
 
-        String status =
-                String.valueOf(responseBody.get("status"));
+        String status = string(paymentResponse.get("status"), responseBody.get("status"));
+        String statusDetail = string(
+                paymentResponse.get("status_detail"),
+                responseBody.get("status_detail")
+        );
 
-        String statusDetail =
-                responseBody.get("status_detail") != null
-                        ? String.valueOf(
-                                responseBody.get("status_detail")
-                        )
-                        : null;
+        OffsetDateTime expiresAt = pix
+                ? OffsetDateTime.now(ZoneOffset.UTC).plusMinutes(30)
+                : null;
 
         return new MercadoPagoPaymentResponse(
-                orderId,
+                string(responseBody.get("id")),
+                string(paymentResponse.get("id")),
                 status,
                 statusDetail,
-                null,
-                null
+                string(paymentMethodResponse.get("qr_code")),
+                string(paymentMethodResponse.get("qr_code_base64")),
+                string(paymentMethodResponse.get("ticket_url")),
+                expiresAt
         );
+    }
+
+    public Map<String, Object> buscarOrder(String orderId) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+
+        ResponseEntity<Map> response = restTemplate.exchange(
+                ORDERS_URL + "/" + orderId,
+                HttpMethod.GET,
+                new HttpEntity<>(headers),
+                Map.class
+        );
+
+        return response.getBody() == null ? Map.of() : response.getBody();
+    }
+
+    private Map<String, Object> firstPayment(Map<String, Object> order) {
+        Map<String, Object> transactions = map(order.get("transactions"));
+        Object paymentsValue = transactions.get("payments");
+
+        if (!(paymentsValue instanceof List<?> payments) || payments.isEmpty()) {
+            return Map.of();
+        }
+
+        return map(payments.get(0));
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> map(Object value) {
+        if (value instanceof Map<?, ?> map) {
+            return (Map<String, Object>) map;
+        }
+        return Map.of();
+    }
+
+    private String string(Object first, Object fallback) {
+        Object value = first != null ? first : fallback;
+        return value == null ? null : String.valueOf(value);
+    }
+
+    private String string(Object value) {
+        return value == null ? null : String.valueOf(value);
     }
 }

@@ -1,0 +1,227 @@
+package com.acaivis.service;
+
+import com.acaivis.model.*;
+import com.acaivis.repository.*;
+import org.junit.jupiter.api.Test;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+class OrderServicePaymentTest {
+
+    OrderRepository orders = mock(OrderRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    DeliveryZoneRepository zones = mock(DeliveryZoneRepository.class);
+    OrderStatusHistoryRepository history = mock(OrderStatusHistoryRepository.class);
+    EmailService email = mock(EmailService.class);
+    MercadoPagoService mp = mock(MercadoPagoService.class);
+    DeliveryService delivery = mock(DeliveryService.class);
+
+    OrderService service() {
+        return new OrderService(orders, products, zones, history, email, mp, delivery);
+    }
+
+    @Test
+    void webhookAprovadoMarcaPago() {
+        Order o = order(OrderStatus.PENDING_PAYMENT);
+        o.setMercadoPagoOrderId("o1");
+        when(orders.findByMercadoPagoOrderId("o1")).thenReturn(Optional.of(o));
+        when(mp.buscarOrder("o1")).thenReturn(Map.of(
+                "status", "processed",
+                "transactions", Map.of("payments", List.of(Map.of(
+                        "id", "p1",
+                        "status", "approved",
+                        "status_detail", "accredited",
+                        "payment_method", Map.of()
+                )))
+        ));
+
+        service().processarWebhookMercadoPago("o1");
+
+        assertEquals(OrderStatus.PAID, o.getStatus());
+        assertTrue(o.isPaymentConfirmed());
+        assertEquals("p1", o.getMercadoPagoPaymentId());
+        verify(history).save(any());
+    }
+
+    @Test
+    void webhookExpiradoCancelaELiberaEstoque() {
+        Order o = order(OrderStatus.PENDING_PAYMENT);
+        o.setMercadoPagoOrderId("o2");
+        o.setPaymentExpiresAt(LocalDateTime.now().minusMinutes(1));
+        Product p = new Product();
+        p.setStockQuantity(0);
+        p.setAvailable(false);
+        OrderItem i = new OrderItem();
+        i.setProduct(p);
+        i.setQuantity(2);
+        o.addItem(i);
+        when(orders.findByMercadoPagoOrderId("o2")).thenReturn(Optional.of(o));
+        when(mp.buscarOrder("o2")).thenReturn(Map.of(
+                "status", "expired",
+                "transactions", Map.of("payments", List.of(Map.of(
+                        "status", "expired",
+                        "payment_method", Map.of()
+                )))
+        ));
+
+        service().processarWebhookMercadoPago("o2");
+
+        assertEquals(OrderStatus.CANCELLED, o.getStatus());
+        assertTrue(o.isStockReleased());
+        assertEquals(2, p.getStockQuantity());
+        verify(products).save(p);
+    }
+
+    @Test
+    void pedidoCanceladoNaoRessuscita() {
+        Order o = order(OrderStatus.CANCELLED);
+        o.setMercadoPagoOrderId("o3");
+        when(orders.findByMercadoPagoOrderId("o3")).thenReturn(Optional.of(o));
+        when(mp.buscarOrder("o3")).thenReturn(Map.of(
+                "status", "processed",
+                "transactions", Map.of("payments", List.of(Map.of(
+                        "id", "late",
+                        "status", "approved",
+                        "payment_method", Map.of()
+                )))
+        ));
+
+        service().processarWebhookMercadoPago("o3");
+
+        assertEquals(OrderStatus.CANCELLED, o.getStatus());
+        assertFalse(o.isPaymentConfirmed());
+        verify(email, never()).sendOrderConfirmation(any());
+    }
+
+    @Test
+    void falhaPagamentoCancelaERepõeEstoque() {
+        Order o = order(OrderStatus.PENDING_PAYMENT);
+        Product p = new Product();
+        p.setStockQuantity(3);
+        p.setAvailable(true);
+        OrderItem i = new OrderItem();
+        i.setProduct(p);
+        i.setQuantity(1);
+        o.addItem(i);
+        when(orders.findById(99L)).thenReturn(Optional.of(o));
+
+        service().cancelarPagamentoFalho(99L);
+
+        assertEquals(OrderStatus.CANCELLED, o.getStatus());
+        assertTrue(o.isStockReleased());
+        assertEquals(4, p.getStockQuantity());
+        verify(products).save(p);
+    }
+
+    @Test
+    void estoqueNaoERepostoDuasVezes() {
+        Order o = order(OrderStatus.CANCELLED);
+        o.setStockReleased(true);
+        Product p = new Product();
+        p.setStockQuantity(5);
+        OrderItem i = new OrderItem();
+        i.setProduct(p);
+        i.setQuantity(3);
+        o.addItem(i);
+        when(orders.findById(100L)).thenReturn(Optional.of(o));
+
+        service().cancelarPagamentoFalho(100L);
+
+        assertEquals(5, p.getStockQuantity());
+        verify(products, never()).save(any());
+    }
+
+    @Test
+    void webhookSemPedidoNaoChamaMercadoPago() {
+        when(orders.findByMercadoPagoOrderId("x")).thenReturn(Optional.empty());
+
+        assertDoesNotThrow(() -> service().processarWebhookMercadoPago("x"));
+        verifyNoInteractions(mp);
+    }
+
+    @Test
+    void pixExpiradoNaoPodeSerAprovadoTardiamente() {
+        Order o = order(OrderStatus.PENDING_PAYMENT);
+        o.setMercadoPagoOrderId("late-exp");
+        o.setPaymentExpiresAt(LocalDateTime.now().minusSeconds(1));
+        when(orders.findByMercadoPagoOrderId("late-exp")).thenReturn(Optional.of(o));
+        when(mp.buscarOrder("late-exp")).thenReturn(Map.of(
+                "status", "processed",
+                "transactions", Map.of("payments", List.of(Map.of(
+                        "id", "late",
+                        "status", "approved",
+                        "payment_method", Map.of()
+                )))
+        ));
+
+        service().processarWebhookMercadoPago("late-exp");
+
+        assertEquals(OrderStatus.CANCELLED, o.getStatus());
+        assertFalse(o.isPaymentConfirmed());
+        assertTrue(o.isStockReleased());
+    }
+
+
+    @Test
+    void schedulerCancelaPixExpiradoERepõeEstoque() {
+        Order o = order(OrderStatus.PENDING_PAYMENT);
+        o.setPaymentExpiresAt(LocalDateTime.now().minusSeconds(1));
+        Product p = new Product();
+        p.setStockQuantity(0);
+        p.setAvailable(false);
+        OrderItem i = new OrderItem();
+        i.setProduct(p);
+        i.setQuantity(2);
+        o.addItem(i);
+
+        when(orders.findAllByStatusAndPaymentMethodAndPaymentExpiresAtLessThanEqualOrderByPaymentExpiresAtAsc(
+                eq(OrderStatus.PENDING_PAYMENT), eq(PaymentMethod.PIX), any(LocalDateTime.class)))
+                .thenReturn(List.of(o));
+
+        service().expirarPixPendentes();
+
+        assertEquals(OrderStatus.CANCELLED, o.getStatus());
+        assertEquals("expired", o.getPaymentStatus());
+        assertTrue(o.isStockReleased());
+        assertEquals(2, p.getStockQuantity());
+        verify(products).save(p);
+        verify(history).save(any());
+    }
+
+    @Test
+    void webhookPendenteMantemPendente() {
+        Order o = order(OrderStatus.PENDING_PAYMENT);
+        o.setMercadoPagoOrderId("o4");
+        when(orders.findByMercadoPagoOrderId("o4")).thenReturn(Optional.of(o));
+        when(mp.buscarOrder("o4")).thenReturn(Map.of(
+                "status", "pending",
+                "transactions", Map.of("payments", List.of(Map.of(
+                        "status", "pending",
+                        "payment_method", Map.of()
+                )))
+        ));
+
+        service().processarWebhookMercadoPago("o4");
+
+        assertEquals(OrderStatus.PENDING_PAYMENT, o.getStatus());
+        assertFalse(o.isPaymentConfirmed());
+    }
+
+    private Order order(OrderStatus status) {
+        Order o = new Order();
+        o.setStatus(status);
+        o.setPaymentConfirmed(false);
+        o.setPaymentMethod(PaymentMethod.PIX);
+        o.setCustomerEmail("x@y.com");
+        o.setTrackingCode("AC123456");
+        o.setPaymentExpiresAt(LocalDateTime.now().plusMinutes(30));
+        return o;
+    }
+}
