@@ -82,6 +82,27 @@ public class Order {
     @Column(name = "mercadopago_order_id", length = 100)
     private String mercadoPagoOrderId;
 
+    @Column(name = "mercadopago_payment_id", length = 100)
+    private String mercadoPagoPaymentId;
+
+    @Column(name = "payment_status", length = 50)
+    private String paymentStatus;
+
+    @Column(name = "payment_status_detail", length = 100)
+    private String paymentStatusDetail;
+
+    @Column(name = "payment_expires_at")
+    private LocalDateTime paymentExpiresAt;
+
+    @Column(name = "pix_qr_code", length = 2000)
+    private String pixQrCode;
+
+    @Column(name = "pix_qr_code_base64", columnDefinition = "TEXT")
+    private String pixQrCodeBase64;
+
+    @Column(name = "pix_ticket_url", length = 2000)
+    private String pixTicketUrl;
+
     @Column(name = "delivery_route_order")
     private Integer deliveryRouteOrder;
 
@@ -303,6 +324,22 @@ public class Order {
     public void setMercadoPagoOrderId(String v) {
         mercadoPagoOrderId = v;
     }
+
+
+    public String getMercadoPagoPaymentId() { return mercadoPagoPaymentId; }
+    public void setMercadoPagoPaymentId(String v) { mercadoPagoPaymentId = v; }
+    public String getPaymentStatus() { return paymentStatus; }
+    public void setPaymentStatus(String v) { paymentStatus = v; }
+    public String getPaymentStatusDetail() { return paymentStatusDetail; }
+    public void setPaymentStatusDetail(String v) { paymentStatusDetail = v; }
+    public LocalDateTime getPaymentExpiresAt() { return paymentExpiresAt; }
+    public void setPaymentExpiresAt(LocalDateTime v) { paymentExpiresAt = v; }
+    public String getPixQrCode() { return pixQrCode; }
+    public void setPixQrCode(String v) { pixQrCode = v; }
+    public String getPixQrCodeBase64() { return pixQrCodeBase64; }
+    public void setPixQrCodeBase64(String v) { pixQrCodeBase64 = v; }
+    public String getPixTicketUrl() { return pixTicketUrl; }
+    public void setPixTicketUrl(String v) { pixTicketUrl = v; }
 
     public String getNotes() {
         return notes;
