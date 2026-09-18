@@ -45,7 +45,18 @@ public class SecurityConfig {
     @Bean AuthenticationManager authenticationManager(AuthenticationConfiguration c)throws Exception{return c.getAuthenticationManager();}
     @Bean CorsConfigurationSource cors(){
         CorsConfiguration c=new CorsConfiguration();
-        c.setAllowedOriginPatterns(List.of("http://localhost:*","https://*.acaivis.com.br","https://acaivis.com.br","https://www.acaivis.com.br","https://acaivis-front-whh6.vercel.app"));
+        c.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "https://acaivis.com.br",
+                "https://www.acaivis.com.br",
+                "https://adm.acaivis.com.br",
+                "https://*.acaivis.com.br",
+                "https://xn--aavis-yra7b.com.br",
+                "https://www.xn--aavis-yra7b.com.br",
+                "https://adm.xn--aavis-yra7b.com.br",
+                "https://*.xn--aavis-yra7b.com.br",
+                "https://acaivis-front-whh6.vercel.app"
+        ));
         c.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
         c.setAllowedHeaders(List.of("*")); c.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource s=new UrlBasedCorsConfigurationSource(); s.registerCorsConfiguration("/**",c); return s;
