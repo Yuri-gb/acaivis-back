@@ -424,10 +424,11 @@ public class OrderService {
     @Transactional
     public void expirarPixPendentes() {
         LocalDateTime now = LocalDateTime.now();
-        orders.findAllByStatusInOrderByDeliveryRouteOrderAscCreatedAtAsc(List.of(OrderStatus.PENDING_PAYMENT)).stream()
-                .filter(o -> o.getPaymentMethod() == PaymentMethod.PIX)
-                .filter(o -> o.getPaymentExpiresAt() != null && !o.getPaymentExpiresAt().isAfter(now))
-                .forEach(o -> {
+        orders.findAllByStatusAndPaymentMethodAndPaymentExpiresAtLessThanEqualOrderByPaymentExpiresAtAsc(
+                OrderStatus.PENDING_PAYMENT,
+                PaymentMethod.PIX,
+                now
+        ).forEach(o -> {
                     o.setStatus(OrderStatus.CANCELLED);
                     o.setPaymentConfirmed(false);
                     o.setPaymentStatus("expired");
