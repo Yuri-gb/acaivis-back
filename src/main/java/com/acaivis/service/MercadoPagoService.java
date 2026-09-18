@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
@@ -41,14 +40,13 @@ public class MercadoPagoService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(accessToken);
-        headers.set("X-Idempotency-Key", pagamento.idempotencyKey() == null || pagamento.idempotencyKey().isBlank() ? UUID.randomUUID().toString() : pagamento.idempotencyKey());
+        headers.set("X-Idempotency-Key", pagamento.idempotencyKey() == null || pagamento.idempotencyKey().isBlank()
+                ? UUID.randomUUID().toString()
+                : pagamento.idempotencyKey());
 
         Map<String, Object> paymentMethod = new HashMap<>();
         paymentMethod.put("id", pix ? "pix" : pagamento.paymentMethodId());
-        paymentMethod.put(
-                "type",
-                pix ? "bank_transfer" : pagamento.paymentMethodType()
-        );
+        paymentMethod.put("type", pix ? "bank_transfer" : pagamento.paymentMethodType());
 
         if (!pix && pagamento.token() != null && !pagamento.token().isBlank()) {
             paymentMethod.put("token", pagamento.token());
@@ -59,7 +57,7 @@ public class MercadoPagoService {
         }
 
         Map<String, Object> payment = new HashMap<>();
-        payment.put("amount", valorTotal);
+        payment.put("amount", valorTotal.toPlainString());
         payment.put("payment_method", paymentMethod);
 
         if (pix) {
