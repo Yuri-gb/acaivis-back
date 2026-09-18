@@ -6,6 +6,7 @@ import com.acaivis.exception.*;
 import com.acaivis.model.*;
 import com.acaivis.repository.*;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -406,6 +407,23 @@ public class OrderService {
                 .toList();
     }
 
+    @Scheduled(fixedDelay = 30000)
+    @Transactional
+    public void expirarPixPendentes() {
+        LocalDateTime now = LocalDateTime.now();
+        orders.findAllByStatusInOrderByDeliveryRouteOrderAscCreatedAtAsc(List.of(OrderStatus.PENDING_PAYMENT)).stream()
+                .filter(o -> o.getPaymentMethod() == PaymentMethod.PIX)
+                .filter(o -> o.getPaymentExpiresAt() != null && !o.getPaymentExpiresAt().isAfter(now))
+                .forEach(o -> {
+                    o.setStatus(OrderStatus.CANCELLED);
+                    o.setPaymentConfirmed(false);
+                    o.setPaymentStatus("expired");
+                    releaseStockIfNeeded(o);
+                    Order saved = orders.save(o);
+                    history.save(new OrderStatusHistory(saved, OrderStatus.CANCELLED, now));
+                });
+    }
+
     @Transactional
     public void processarWebhookMercadoPago(String mercadoPagoOrderId) {
         if (mercadoPagoOrderId == null || mercadoPagoOrderId.isBlank()) {
@@ -458,6 +476,9 @@ public class OrderService {
         String effectiveStatus = paymentStatus != null ? paymentStatus : orderStatus;
 
         if (isPaid(effectiveStatus, orderStatus)) {
+            if (order.getStatus() == OrderStatus.CANCELLED || order.isStockReleased()) {
+                return;
+            }
             if (!order.isPaymentConfirmed()) {
                 order.setPaymentConfirmed(true);
                 order.setStatus(OrderStatus.PAID);
