@@ -9,38 +9,25 @@ import static org.junit.jupiter.api.Assertions.*;
 class SecurityConfigTest {
 
     @Test
-    void devePermitirDominiosDeProducao() {
-        CorsConfigurationSource source = new SecurityConfig().cors();
+    void devePermitirDominiosPublicos() {
+        CorsConfiguration configuration = getConfiguration();
 
-        CorsConfiguration configuration =
-                source.getCorsConfiguration(new org.springframework.mock.web.MockHttpServletRequest());
-
-        assertNotNull(configuration);
         assertTrue(configuration.getAllowedOriginPatterns().contains("https://acaivis.com.br"));
-        assertTrue(configuration.getAllowedOriginPatterns().contains("https://adm.acaivis.com.br"));
-        assertTrue(configuration.getAllowedOriginPatterns().contains("https://xn--aavis-yra7b.com.br"));
-        assertTrue(configuration.getAllowedOriginPatterns().contains("https://adm.xn--aavis-yra7b.com.br"));
+        assertTrue(configuration.getAllowedOriginPatterns().contains("https://www.acaivis.com.br"));
+        assertTrue(configuration.getAllowedOriginPatterns().contains("https://acaivis-front-whh6.vercel.app"));
     }
 
     @Test
     void devePermitirAmbienteLocal() {
-        CorsConfigurationSource source = new SecurityConfig().cors();
+        CorsConfiguration configuration = getConfiguration();
 
-        CorsConfiguration configuration =
-                source.getCorsConfiguration(new org.springframework.mock.web.MockHttpServletRequest());
-
-        assertNotNull(configuration);
         assertTrue(configuration.getAllowedOriginPatterns().contains("http://localhost:*"));
     }
 
     @Test
     void devePermitirCredenciaisEMetodosNecessarios() {
-        CorsConfigurationSource source = new SecurityConfig().cors();
+        CorsConfiguration configuration = getConfiguration();
 
-        CorsConfiguration configuration =
-                source.getCorsConfiguration(new org.springframework.mock.web.MockHttpServletRequest());
-
-        assertNotNull(configuration);
         assertTrue(configuration.getAllowCredentials());
         assertTrue(configuration.getAllowedMethods().contains("GET"));
         assertTrue(configuration.getAllowedMethods().contains("POST"));
@@ -49,5 +36,14 @@ class SecurityConfigTest {
         assertTrue(configuration.getAllowedMethods().contains("DELETE"));
         assertTrue(configuration.getAllowedMethods().contains("OPTIONS"));
         assertTrue(configuration.getAllowedHeaders().contains("*"));
+    }
+
+    private CorsConfiguration getConfiguration() {
+        CorsConfigurationSource source = new SecurityConfig().cors();
+        CorsConfiguration configuration =
+                source.getCorsConfiguration(new org.springframework.mock.web.MockHttpServletRequest());
+
+        assertNotNull(configuration);
+        return configuration;
     }
 }
