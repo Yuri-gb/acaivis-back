@@ -407,6 +407,19 @@ public class OrderService {
                 .toList();
     }
 
+    @Transactional
+    public void cancelarPagamentoFalho(Long orderId) {
+        Order order = orders.findById(orderId).orElse(null);
+        if (order == null || order.getStatus() == OrderStatus.PAID || order.getStatus() == OrderStatus.CANCELLED) {
+            return;
+        }
+        order.setStatus(OrderStatus.CANCELLED);
+        order.setPaymentConfirmed(false);
+        releaseStockIfNeeded(order);
+        Order saved = orders.save(order);
+        history.save(new OrderStatusHistory(saved, OrderStatus.CANCELLED, LocalDateTime.now()));
+    }
+
     @Scheduled(fixedDelay = 30000)
     @Transactional
     public void expirarPixPendentes() {
