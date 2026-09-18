@@ -601,7 +601,7 @@ public class OrderService {
         do {
 
             StringBuilder b =
-                    new StringBuilder("AC-");
+                    new StringBuilder("AC");
 
             for (int i = 0; i < 6; i++)
                 b.append(
