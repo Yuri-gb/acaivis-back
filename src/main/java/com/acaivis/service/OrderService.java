@@ -29,6 +29,7 @@ public class OrderService {
     private final DeliveryZoneRepository zones;
     private final OrderStatusHistoryRepository history;
     private final EmailService email;
+    private final OrderEmailAutomationService emailAutomation;
     private final MercadoPagoService mercadoPago;
     private final DeliveryService delivery;
 
@@ -38,6 +39,7 @@ public class OrderService {
             DeliveryZoneRepository z,
             OrderStatusHistoryRepository h,
             EmailService e,
+            OrderEmailAutomationService emailAutomation,
             MercadoPagoService mercadoPago,
             DeliveryService delivery
     ) {
@@ -46,6 +48,7 @@ public class OrderService {
         zones = z;
         history = h;
         email = e;
+        this.emailAutomation = emailAutomation;
         this.mercadoPago = mercadoPago;
         this.delivery = delivery;
     }
@@ -186,11 +189,8 @@ public class OrderService {
                 )
         );
 
-        if (saved.getStatus() == OrderStatus.PAID
-                && saved.getCustomerEmail() != null) {
-
-            email.sendOrderConfirmation(saved);
-        }
+        if (saved.getStatus() == OrderStatus.PENDING_PAYMENT)
+            emailAutomation.notifyPaymentPending(saved);
 
         return to(saved);
     }
@@ -304,11 +304,10 @@ public class OrderService {
                 )
         );
 
-        if (status == OrderStatus.PAID
-                && saved.getCustomerEmail() != null) {
-
-            email.sendOrderConfirmation(saved);
-        }
+        if (status == OrderStatus.PAID)
+            emailAutomation.notifyPaymentConfirmed(saved);
+        else
+            emailAutomation.notifyStatus(saved);
 
         return to(saved);
     }
@@ -323,7 +322,7 @@ public class OrderService {
         o.setStatus(OrderStatus.PAID);
         Order saved = orders.save(o);
         history.save(new OrderStatusHistory(saved, OrderStatus.PAID, LocalDateTime.now()));
-        if (saved.getCustomerEmail() != null) email.sendOrderConfirmation(saved);
+        if (saved.getCustomerEmail() != null) emailAutomation.notifyPaymentConfirmed(saved);
         return to(saved);
     }
 
