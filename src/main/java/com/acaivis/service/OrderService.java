@@ -461,7 +461,6 @@ public class OrderService {
             if (!order.isPaymentConfirmed()) {
                 order.setPaymentConfirmed(true);
                 order.setStatus(OrderStatus.PAID);
-                releaseStockIfNeeded(order);
                 orders.save(order);
                 history.save(new OrderStatusHistory(order, OrderStatus.PAID, LocalDateTime.now()));
                 if (order.getCustomerEmail() != null) {
