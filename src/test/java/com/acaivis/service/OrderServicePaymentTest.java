@@ -168,6 +168,33 @@ class OrderServicePaymentTest {
         assertTrue(o.isStockReleased());
     }
 
+
+    @Test
+    void schedulerCancelaPixExpiradoERepõeEstoque() {
+        Order o = order(OrderStatus.PENDING_PAYMENT);
+        o.setPaymentExpiresAt(LocalDateTime.now().minusSeconds(1));
+        Product p = new Product();
+        p.setStockQuantity(0);
+        p.setAvailable(false);
+        OrderItem i = new OrderItem();
+        i.setProduct(p);
+        i.setQuantity(2);
+        o.addItem(i);
+
+        when(orders.findAllByStatusAndPaymentMethodAndPaymentExpiresAtLessThanEqualOrderByPaymentExpiresAtAsc(
+                OrderStatus.PENDING_PAYMENT, PaymentMethod.PIX, any(LocalDateTime.class)))
+                .thenReturn(List.of(o));
+
+        service().expirarPixPendentes();
+
+        assertEquals(OrderStatus.CANCELLED, o.getStatus());
+        assertEquals("expired", o.getPaymentStatus());
+        assertTrue(o.isStockReleased());
+        assertEquals(2, p.getStockQuantity());
+        verify(products).save(p);
+        verify(history).save(any());
+    }
+
     @Test
     void webhookPendenteMantemPendente() {
         Order o = order(OrderStatus.PENDING_PAYMENT);
