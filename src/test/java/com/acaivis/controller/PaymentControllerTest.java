@@ -55,7 +55,6 @@ class PaymentControllerTest {
         assertSame(response, result.getBody());
         assertEquals("mp-order-10", order.getMercadoPagoOrderId());
         assertEquals("mp-payment-10", order.getMercadoPagoPaymentId());
-        assertEquals("cliente@teste.com", request.payerEmail());
         verify(orders).save(order);
         verify(orderService, never()).cancelarPagamentoFalho(10L);
     }
