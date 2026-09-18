@@ -1,7 +1,7 @@
 package com.acaivis.service;
 
 import com.acaivis.model.Order;
-import com.acaivis.model.OrderEmailEvent;
+import com.acaivis.service.OrderEmailEvent;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.beans.factory.annotation.Value;
