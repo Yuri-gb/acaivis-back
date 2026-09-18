@@ -9,6 +9,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 
@@ -96,8 +97,8 @@ public class MercadoPagoService {
                 responseBody.get("status_detail")
         );
 
-        LocalDateTime expiresAt = pix
-                ? LocalDateTime.now(ZoneOffset.UTC).plusMinutes(30)
+        OffsetDateTime expiresAt = pix
+                ? OffsetDateTime.now(ZoneOffset.UTC).plusMinutes(30)
                 : null;
 
         return new MercadoPagoPaymentResponse(
