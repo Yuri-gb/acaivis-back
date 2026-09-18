@@ -75,11 +75,17 @@ public class PaymentController {
                 order.getCustomerEmail()
         );
 
-        MercadoPagoPaymentResponse response = mercadoPago.criarPagamento(
-                order.getTotal(),
-                order.getTrackingCode(),
-                pagamento
-        );
+        MercadoPagoPaymentResponse response;
+        try {
+            response = mercadoPago.criarPagamento(
+                    order.getTotal(),
+                    order.getTrackingCode(),
+                    pagamento
+            );
+        } catch (RuntimeException exception) {
+            orderService.cancelarPagamentoFalho(orderId);
+            throw exception;
+        }
 
         order.setMercadoPagoOrderId(response.orderId());
         order.setMercadoPagoPaymentId(response.paymentId());
