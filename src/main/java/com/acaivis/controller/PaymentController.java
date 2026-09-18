@@ -72,7 +72,8 @@ public class PaymentController {
                 request.paymentMethodType(),
                 request.token(),
                 request.installments(),
-                order.getCustomerEmail()
+                order.getCustomerEmail(),
+                request.idempotencyKey()
         );
 
         MercadoPagoPaymentResponse response;
