@@ -189,7 +189,8 @@ public class OrderService {
                 )
         );
 
-        if (saved.getStatus() == OrderStatus.PENDING_PAYMENT)
+        if (saved.getStatus() == OrderStatus.PENDING_PAYMENT
+                && saved.getPaymentMethod() == PaymentMethod.PIX)
             emailAutomation.notifyPaymentPending(saved);
 
         return to(saved);
