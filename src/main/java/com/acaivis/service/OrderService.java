@@ -488,6 +488,20 @@ public class OrderService {
 
         String effectiveStatus = paymentStatus != null ? paymentStatus : orderStatus;
 
+        if (order.getPaymentMethod() == PaymentMethod.PIX
+                && order.getPaymentExpiresAt() != null
+                && !order.getPaymentExpiresAt().isAfter(LocalDateTime.now())) {
+            if (order.getStatus() != OrderStatus.CANCELLED) {
+                order.setStatus(OrderStatus.CANCELLED);
+                order.setPaymentConfirmed(false);
+                order.setPaymentStatus("expired");
+                releaseStockIfNeeded(order);
+                orders.save(order);
+                history.save(new OrderStatusHistory(order, OrderStatus.CANCELLED, LocalDateTime.now()));
+            }
+            return;
+        }
+
         if (isPaid(effectiveStatus, orderStatus)) {
             if (order.getStatus() == OrderStatus.CANCELLED || order.isStockReleased()) {
                 return;
