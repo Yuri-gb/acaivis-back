@@ -1,6 +1,6 @@
 package com.acaivis.dto.payment;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 public record MercadoPagoPaymentResponse(
         String orderId,
@@ -10,6 +10,6 @@ public record MercadoPagoPaymentResponse(
         String qrCode,
         String qrCodeBase64,
         String ticketUrl,
-        LocalDateTime expiresAt
+        OffsetDateTime expiresAt
 ) {
 }
