@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: acaivis-postgres
+    environment:
+      POSTGRES_DB: acaivis
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - acaivis_pgdata:/var/lib/postgresql/data
+  api:
+    build: .
+    container_name: acaivis-api
+    depends_on:
+      - postgres
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/acaivis
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: change-this-in-production-to-a-long-random-secret-key
+      ADMIN_EMAIL: admin@acaivis.com
+      ADMIN_PASSWORD: ChangeMe123!
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY}
+      MAIL_FROM: ${MAIL_FROM:-}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-true}
+      MAIL_SMTP_STARTTLS: ${MAIL_SMTP_STARTTLS:-true}
+      TRACKING_BASE_URL: ${TRACKING_BASE_URL:-http://localhost:5173/rastrear-pedido}
+    ports:
+      - "8080:8080"
+volumes:
+  acaivis_pgdata:

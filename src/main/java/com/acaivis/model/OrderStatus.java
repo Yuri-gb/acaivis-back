@@ -1,0 +1,1 @@
+package com.acaivis.model; public enum OrderStatus { PENDING_PAYMENT, PAYMENT_PROMISED, PAID, PREPARING, READY, OUT_FOR_DELIVERY, DELIVERED, CANCELLED }

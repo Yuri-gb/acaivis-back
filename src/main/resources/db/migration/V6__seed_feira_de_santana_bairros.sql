@@ -1,0 +1,57 @@
+-- Bairros oficiais do distrito sede de Feira de Santana.
+-- Os bairros já existentes mantêm suas tarifas/estado.
+-- Os novos bairros entram inativos com tarifa 0,00 para serem configurados no Admin.
+
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Aeroporto', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Mangabeira', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Conceição', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Caseb', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Santo Antônio dos Prazeres', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Lagoa Grande', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Registro', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Chaparral', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Parque Getúlio Vargas', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Capuchinhos', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Santa Mônica', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('SIM', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Lagoa Salgada', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Subaé', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('35º BI', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Aviário', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Tomba', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Brasília', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Limoeiro', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Pedra do Descanso', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Serraria Brasil', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Chácara São Cosme', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Muchila', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Jardim Acácia', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Olhos D’água', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Centro Industrial – CIS SUL', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Novo Horizonte', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('CIS NORTE', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Pedra Ferrada', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Asa Branca', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Campo Limpo', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Pampalona', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Calumbi', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Vale do Jacuípe', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Cruzeiro', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Rua Nova', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Campo do Gado Novo', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Baraúna', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Jardim Cruzeiro', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Nova Esperança', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Gabriela', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Sobradinho', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Papagaio', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Mantiba', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Parque Ipê', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Cidade Nova', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Queimadinha', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('São João', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Ponto Central', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+INSERT INTO delivery_zones (name, fee, active) VALUES ('Centro', 0.00, FALSE) ON CONFLICT (name) DO NOTHING;
+UPDATE delivery_zones SET fee = 8.00, active = TRUE WHERE name = 'Centro';
+UPDATE delivery_zones SET fee = 10.00, active = TRUE WHERE name = 'Tomba';
+UPDATE delivery_zones SET fee = 12.00, active = TRUE WHERE name = 'Brasília';

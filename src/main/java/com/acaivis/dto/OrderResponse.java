@@ -1,0 +1,3 @@
+package com.acaivis.dto;
+import com.acaivis.model.*; import java.math.BigDecimal; import java.time.LocalDateTime; import java.util.List;
+public record OrderResponse(Long id,String trackingCode,Long comandaNumber,String customerName,String customerPhone,String customerEmail,String address,String street,String number,String complement,String neighborhood,String city,String state,String zipCode,Long deliveryZoneId,String deliveryZoneName,BigDecimal subtotal,BigDecimal deliveryFee,BigDecimal discount,BigDecimal total,PaymentMethod paymentMethod,boolean paymentConfirmed,OrderStatus status,LocalDateTime createdAt,String notes,List<OrderItemResponse> items,Integer deliveryRouteOrder,String deliveryProofUrl,LocalDateTime deliveredAt,String deliveredBy) {}
