@@ -15,7 +15,9 @@ public record MercadoPagoPaymentRequest(
         Integer installments,
 
         @NotBlank
-        String payerEmail
+        String payerEmail,
+
+        String idempotencyKey
 
 ) {
 }
