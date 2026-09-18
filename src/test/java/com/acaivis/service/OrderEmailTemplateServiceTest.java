@@ -1,7 +1,7 @@
 package com.acaivis.service;
 
 import com.acaivis.model.Order;
-import com.acaivis.model.OrderEmailEvent;
+import com.acaivis.service.OrderEmailEvent;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
