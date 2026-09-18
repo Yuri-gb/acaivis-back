@@ -75,7 +75,6 @@ class OrderEmailTemplateServiceTest {
         order.setCustomerEmail("cliente@example.com");
         order.setTrackingCode("AC-TEST01");
         order.setTotal(new BigDecimal("25.00"));
-        order.setItems(new ArrayList<>());
 
         var item = new com.acaivis.model.OrderItem();
         item.setProductName("Açaí");
