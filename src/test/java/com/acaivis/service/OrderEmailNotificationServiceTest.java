@@ -76,7 +76,7 @@ class OrderEmailNotificationServiceTest {
         order.setCustomerEmail("cliente@example.com");
         order.setTrackingCode("AC-TEST01");
         order.setTotal(new BigDecimal("25.00"));
-        order.setItems(new java.util.ArrayList<>());
+        // A lista de itens já é inicializada pelo próprio Order.
         return order;
     }
 }
