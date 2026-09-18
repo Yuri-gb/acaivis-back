@@ -51,6 +51,10 @@ public class OrderEmailTemplateService {
             default -> throw new IllegalArgumentException("Evento de e-mail não suportado: " + event);
         }
 
+        boolean showTracking = event == OrderEmailEvent.PAYMENT_CONFIRMED
+                || event == OrderEmailEvent.PREPARING
+                || event == OrderEmailEvent.READY
+                || event == OrderEmailEvent.OUT_FOR_DELIVERY;
         String trackingUrl = trackingBaseUrl + "?codigo=" + order.getTrackingCode();
 
         StringBuilder items = new StringBuilder();
@@ -79,12 +83,7 @@ public class OrderEmailTemplateService {
                           <strong>Total: R$ %s</strong>
                         </div>
                       </div>
-                      <a href="%s" style="display:inline-block;background:#9b4dff;color:#fff;text-decoration:none;padding:13px 18px;border-radius:10px;font-weight:bold;">
-                        Acompanhar pedido
-                      </a>
-                      <p style="font-size:13px;color:#999;margin-top:24px;">
-                        Código de acompanhamento: <strong style="color:#ddd;">%s</strong>
-                      </p>
+                      %s
                     </div>
                   </div>
                 </body>
@@ -95,8 +94,10 @@ public class OrderEmailTemplateService {
                 escape(order.getTrackingCode()),
                 items,
                 order.getTotal(),
-                trackingUrl,
-                escape(order.getTrackingCode())
+                showTracking
+                        ? ("""<a href="%s" style="display:inline-block;background:#9b4dff;color:#fff;text-decoration:none;padding:13px 18px;border-radius:10px;font-weight:bold;">Acompanhar pedido</a>
+                           <p style="font-size:13px;color:#999;margin-top:24px;">Código de acompanhamento: <strong style="color:#ddd;">%s</strong></p>""").formatted(trackingUrl, escape(order.getTrackingCode()))
+                        : ""
         );
 
         return new EmailContent(subject, html);
