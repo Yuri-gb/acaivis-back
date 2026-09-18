@@ -194,6 +194,7 @@ class OrderServicePaymentTest {
         o.setPaymentMethod(PaymentMethod.PIX);
         o.setCustomerEmail("x@y.com");
         o.setTrackingCode("AC123456");
+        o.setPaymentExpiresAt(LocalDateTime.now().plusMinutes(30));
         return o;
     }
 }
