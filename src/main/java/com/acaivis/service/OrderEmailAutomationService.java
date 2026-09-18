@@ -2,6 +2,7 @@ package com.acaivis.service;
 
 import com.acaivis.model.Order;
 import com.acaivis.model.OrderEmailEvent;
+import com.acaivis.model.OrderStatus;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -22,7 +23,8 @@ public class OrderEmailAutomationService {
     }
 
     public void notifyStatus(Order order) {
-        switch (order.getStatus()) {
+        OrderStatus status = order.getStatus();
+        switch (status) {
             case PREPARING -> notifications.send(order, OrderEmailEvent.PREPARING);
             case READY -> notifications.send(order, OrderEmailEvent.READY);
             case OUT_FOR_DELIVERY -> notifications.send(order, OrderEmailEvent.OUT_FOR_DELIVERY);
