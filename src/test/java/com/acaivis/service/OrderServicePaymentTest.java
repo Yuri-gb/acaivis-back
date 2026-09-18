@@ -182,7 +182,7 @@ class OrderServicePaymentTest {
         o.addItem(i);
 
         when(orders.findAllByStatusAndPaymentMethodAndPaymentExpiresAtLessThanEqualOrderByPaymentExpiresAtAsc(
-                OrderStatus.PENDING_PAYMENT, PaymentMethod.PIX, any(LocalDateTime.class)))
+                eq(OrderStatus.PENDING_PAYMENT), eq(PaymentMethod.PIX), any(LocalDateTime.class)))
                 .thenReturn(List.of(o));
 
         service().expirarPixPendentes();
