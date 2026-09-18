@@ -95,10 +95,11 @@ public class OrderEmailTemplateService {
                 items,
                 order.getTotal(),
                 showTracking
-                        ? ("""<a href="%s" style="display:inline-block;background:#9b4dff;color:#fff;text-decoration:none;padding:13px 18px;border-radius:10px;font-weight:bold;">Acompanhar pedido</a>
-                           <p style="font-size:13px;color:#999;margin-top:24px;">Código de acompanhamento: <strong style="color:#ddd;">%s</strong></p>""").formatted(trackingUrl, escape(order.getTrackingCode()))
-                        : ""
-        );
+                        ? "<a href=\"" + trackingUrl + "\" style=\"display:inline-block;background:#9b4dff;color:#fff;text-decoration:none;padding:13px 18px;border-radius:10px;font-weight:bold;\">Acompanhar pedido</a>"
+                                + "<p style=\"font-size:13px;color:#999;margin-top:24px;\">Código de acompanhamento: <strong style=\"color:#ddd;\">"
+                                + escape(order.getTrackingCode())
+                                + "</strong></p>"
+                        : ""        );
 
         return new EmailContent(subject, html);
     }
