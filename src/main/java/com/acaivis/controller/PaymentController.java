@@ -93,7 +93,7 @@ public class PaymentController {
         order.setMercadoPagoPaymentId(response.paymentId());
         order.setPaymentStatus(response.status());
         order.setPaymentStatusDetail(response.statusDetail());
-        order.setPaymentExpiresAt(response.expiresAt());
+        order.setPaymentExpiresAt(response.expiresAt() == null ? null : response.expiresAt().toLocalDateTime());
         order.setPixQrCode(response.qrCode());
         order.setPixQrCodeBase64(response.qrCodeBase64());
         order.setPixTicketUrl(response.ticketUrl());
