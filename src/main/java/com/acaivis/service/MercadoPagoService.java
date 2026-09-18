@@ -40,7 +40,7 @@ public class MercadoPagoService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(accessToken);
-        headers.set("X-Idempotency-Key", UUID.randomUUID().toString());
+        headers.set("X-Idempotency-Key", pagamento.idempotencyKey() == null || pagamento.idempotencyKey().isBlank() ? UUID.randomUUID().toString() : pagamento.idempotencyKey());
 
         Map<String, Object> paymentMethod = new HashMap<>();
         paymentMethod.put("id", pix ? "pix" : pagamento.paymentMethodId());
