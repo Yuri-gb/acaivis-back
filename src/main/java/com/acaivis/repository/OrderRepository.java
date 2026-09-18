@@ -1,7 +1,8 @@
 package com.acaivis.repository;
 
 import com.acaivis.model.Order;
-import com.acaivis.model.OrderStatus;\nimport com.acaivis.model.PaymentMethod;
+import com.acaivis.model.OrderStatus;
+import com.acaivis.model.PaymentMethod;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
