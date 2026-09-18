@@ -21,6 +21,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @RestController
 @RequestMapping("/api/payments")
@@ -118,7 +119,7 @@ public class PaymentController {
                 order.getPixQrCode(),
                 order.getPixQrCodeBase64(),
                 order.getPixTicketUrl(),
-                order.getPaymentExpiresAt()
+                order.getPaymentExpiresAt() == null ? null : order.getPaymentExpiresAt().atOffset(ZoneOffset.UTC)
         ));
     }
 
