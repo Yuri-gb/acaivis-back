@@ -143,6 +143,59 @@ class MercadoPagoServiceTest {
         );
     }
 
+    @Test
+    void naoDeveEnviarParcelasParaCartaoDeDebito() throws Exception {
+        RestTemplate rt = mock(RestTemplate.class);
+        MercadoPagoService s = new MercadoPagoService();
+        field(s, "restTemplate", rt);
+        field(s, "accessToken", "token");
+
+        Map<String, Object> payment = Map.of(
+                "id", "pay-debit-1",
+                "status", "processed",
+                "status_detail", "accredited",
+                "payment_method", Map.of(
+                        "id", "visa",
+                        "type", "debit_card"
+                )
+        );
+
+        when(rt.exchange(
+                eq("https://api.mercadopago.com/v1/orders"),
+                eq(HttpMethod.POST),
+                any(HttpEntity.class),
+                eq(Map.class)
+        )).thenReturn(ResponseEntity.ok(Map.of(
+                "id", "ord-debit-1",
+                "status", "processed",
+                "transactions", Map.of("payments", List.of(payment))
+        )));
+
+        var req = new MercadoPagoPaymentRequest(
+                "visa", "debit_card", "token-debit-1", 1, "x@y.com", "idem-debit-1"
+        );
+
+        s.criarPagamento(new BigDecimal("25.00"), "card-debit-test", req);
+
+        ArgumentCaptor<HttpEntity> c = ArgumentCaptor.forClass(HttpEntity.class);
+        verify(rt).exchange(
+                eq("https://api.mercadopago.com/v1/orders"),
+                eq(HttpMethod.POST),
+                c.capture(),
+                eq(Map.class)
+        );
+
+        Map<?, ?> body = (Map<?, ?>) c.getValue().getBody();
+        Map<?, ?> tx = (Map<?, ?>) body.get("transactions");
+        Map<?, ?> sent = (Map<?, ?>) ((List<?>) tx.get("payments")).get(0);
+        Map<?, ?> paymentMethod = (Map<?, ?>) sent.get("payment_method");
+
+        assertEquals("visa", paymentMethod.get("id"));
+        assertEquals("debit_card", paymentMethod.get("type"));
+        assertEquals("token-debit-1", paymentMethod.get("token"));
+        assertFalse(paymentMethod.containsKey("installments"));
+    }
+
     static void field(Object o, String n, Object v) throws Exception {
         Field f = o.getClass().getDeclaredField(n);
         f.setAccessible(true);

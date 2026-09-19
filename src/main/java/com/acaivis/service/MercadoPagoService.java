@@ -56,7 +56,9 @@ public class MercadoPagoService {
             paymentMethod.put("token", pagamento.token());
         }
 
-        if (!pix && pagamento.installments() != null) {
+        if (!pix
+                && !"debit_card".equalsIgnoreCase(pagamento.paymentMethodType())
+                && pagamento.installments() != null) {
             paymentMethod.put("installments", pagamento.installments());
         }
 
