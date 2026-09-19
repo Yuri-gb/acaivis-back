@@ -9,6 +9,7 @@ import com.acaivis.model.PaymentMethod;
 import com.acaivis.model.Product;
 import com.acaivis.repository.DeliveryZoneRepository;
 import com.acaivis.repository.OrderRepository;
+import com.acaivis.repository.ProductRepository;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -55,62 +56,34 @@ class CardCheckoutServiceTest {
         when(products.findById(1L)).thenReturn(Optional.of(product));
 
         MercadoPagoPaymentResponse processing = new MercadoPagoPaymentResponse(
-                "mp-order-1",
-                "mp-payment-1",
-                "processing",
-                "in_process",
-                null,
-                null,
-                null,
-                null
+                "mp-order-1", "mp-payment-1", "processing", "in_process",
+                null, null, null, null
         );
         when(mercadoPago.criarPagamento(
-                any(BigDecimal.class),
-                anyString(),
-                any(MercadoPagoPaymentRequest.class)
+                any(BigDecimal.class), anyString(), any(MercadoPagoPaymentRequest.class)
         )).thenReturn(processing);
 
         OrderRequest request = new OrderRequest(
-                "Cliente",
-                "71999999999",
-                "cliente@email.com",
-                "Rua A",
-                "10",
-                null,
-                "Centro",
-                "Feira de Santana",
-                "BA",
-                "44000000",
-                1L,
-                PaymentMethod.CREDIT_CARD,
-                null,
+                "Cliente", "71999999999", "cliente@email.com", "Rua A", "10", null,
+                "Centro", "Feira de Santana", "BA", "44000000", 1L,
+                PaymentMethod.CREDIT_CARD, null,
                 List.of(new OrderItemRequest(1L, 1))
         );
 
         var response = service.checkout(
                 request,
                 new MercadoPagoPaymentRequest(
-                        "master",
-                        "credit_card",
-                        "token",
-                        1,
-                        "cliente@email.com",
-                        "idem-1"
+                        "master", "credit_card", "token", 1,
+                        "cliente@email.com", "idem-1"
                 )
         );
 
         assertNull(response.order());
         verify(mercadoPago).criarPagamento(
-                any(BigDecimal.class),
-                anyString(),
-                any(MercadoPagoPaymentRequest.class)
+                any(BigDecimal.class), anyString(), any(MercadoPagoPaymentRequest.class)
         );
         verifyNoInteractions(mercadoPagoDebit);
-        verify(paymentAttempts).register(
-                request,
-                new BigDecimal("25.00"),
-                processing
-        );
+        verify(paymentAttempts).register(request, new BigDecimal("25.00"), processing);
         verify(orderService, never()).create(any());
     }
 
@@ -140,62 +113,34 @@ class CardCheckoutServiceTest {
         when(products.findById(1L)).thenReturn(Optional.of(product));
 
         MercadoPagoPaymentResponse processing = new MercadoPagoPaymentResponse(
-                "mp-debit-order",
-                "mp-debit-payment",
-                "processing",
-                "in_process",
-                null,
-                null,
-                null,
-                null
+                "mp-debit-order", "mp-debit-payment", "processing", "in_process",
+                null, null, null, null
         );
         when(mercadoPagoDebit.criarPagamento(
-                any(BigDecimal.class),
-                anyString(),
-                any(MercadoPagoPaymentRequest.class)
+                any(BigDecimal.class), anyString(), any(MercadoPagoPaymentRequest.class)
         )).thenReturn(processing);
 
         OrderRequest request = new OrderRequest(
-                "Cliente",
-                "71999999999",
-                "cliente@email.com",
-                "Rua A",
-                "10",
-                null,
-                "Centro",
-                "Feira de Santana",
-                "BA",
-                "44000000",
-                1L,
-                PaymentMethod.DEBIT_CARD,
-                null,
+                "Cliente", "71999999999", "cliente@email.com", "Rua A", "10", null,
+                "Centro", "Feira de Santana", "BA", "44000000", 1L,
+                PaymentMethod.DEBIT_CARD, null,
                 List.of(new OrderItemRequest(1L, 1))
         );
 
         var response = service.checkout(
                 request,
                 new MercadoPagoPaymentRequest(
-                        "elo",
-                        "debit_card",
-                        "token",
-                        null,
-                        "cliente@email.com",
-                        "idem-debit-1"
+                        "elo", "debit_card", "token", null,
+                        "cliente@email.com", "idem-debit-1"
                 )
         );
 
         assertNull(response.order());
         verify(mercadoPagoDebit).criarPagamento(
-                any(BigDecimal.class),
-                anyString(),
-                any(MercadoPagoPaymentRequest.class)
+                any(BigDecimal.class), anyString(), any(MercadoPagoPaymentRequest.class)
         );
         verifyNoInteractions(mercadoPago);
-        verify(paymentAttempts).register(
-                request,
-                new BigDecimal("25.00"),
-                processing
-        );
+        verify(paymentAttempts).register(request, new BigDecimal("25.00"), processing);
         verify(orderService, never()).create(any());
     }
 }
