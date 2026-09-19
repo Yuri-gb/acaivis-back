@@ -410,6 +410,21 @@ public class OrderService {
     }
 
     @Transactional
+    public void registrarHistoricoPagamentoAprovado(Order order) {
+        history.save(
+                new OrderStatusHistory(
+                        order,
+                        OrderStatus.PAID,
+                        LocalDateTime.now()
+                )
+        );
+
+        if (order.getCustomerEmail() != null) {
+            email.sendOrderConfirmation(order);
+        }
+    }
+
+    @Transactional
     public void cancelarPagamentoFalho(Long orderId) {
         Order order = orders.findById(orderId).orElse(null);
         if (order == null || order.getStatus() == OrderStatus.PAID || order.getStatus() == OrderStatus.CANCELLED) {
