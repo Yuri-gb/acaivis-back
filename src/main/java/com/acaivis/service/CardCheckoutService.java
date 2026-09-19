@@ -27,6 +27,7 @@ public class CardCheckoutService {
     private final ProductRepository products;
     private final OrderRepository orders;
     private final MercadoPagoService mercadoPago;
+    private final MercadoPagoDebitService mercadoPagoDebit;
     private final OrderService orderService;
     private final PaymentAttemptService paymentAttempts;
 
@@ -35,6 +36,7 @@ public class CardCheckoutService {
             ProductRepository products,
             OrderRepository orders,
             MercadoPagoService mercadoPago,
+            MercadoPagoDebitService mercadoPagoDebit,
             OrderService orderService,
             PaymentAttemptService paymentAttempts
     ) {
@@ -42,6 +44,7 @@ public class CardCheckoutService {
         this.products = products;
         this.orders = orders;
         this.mercadoPago = mercadoPago;
+        this.mercadoPagoDebit = mercadoPagoDebit;
         this.orderService = orderService;
         this.paymentAttempts = paymentAttempts;
     }
@@ -52,8 +55,8 @@ public class CardCheckoutService {
             MercadoPagoPaymentRequest paymentRequest
     ) {
         if (orderRequest.paymentMethod() == null
-                || (orderRequest.paymentMethod().name().equals("PIX"))
-                || (orderRequest.paymentMethod().name().equals("CASH"))) {
+                || orderRequest.paymentMethod().name().equals("PIX")
+                || orderRequest.paymentMethod().name().equals("CASH")) {
             throw new BusinessException("Este endpoint é exclusivo para cartão.");
         }
 
@@ -92,14 +95,23 @@ public class CardCheckoutService {
             );
         }
 
-        BigDecimal total = subtotal
-                .add(zone.getFee());
+        BigDecimal total = subtotal.add(zone.getFee());
 
-        MercadoPagoPaymentResponse payment = mercadoPago.criarPagamento(
-                total,
-                "card-checkout-" + System.nanoTime(),
-                paymentRequest
-        );
+        MercadoPagoPaymentResponse payment;
+
+        if (orderRequest.paymentMethod().name().equals("DEBIT_CARD")) {
+            payment = mercadoPagoDebit.criarPagamento(
+                    total,
+                    "card-checkout-" + System.nanoTime(),
+                    paymentRequest
+            );
+        } else {
+            payment = mercadoPago.criarPagamento(
+                    total,
+                    "card-checkout-" + System.nanoTime(),
+                    paymentRequest
+            );
+        }
 
         if (!isApproved(payment.status())) {
             if (isProcessing(payment.status())) {
