@@ -24,4 +24,14 @@ public record MercadoPagoPaymentRequest(
         String idempotencyKey
 
 ) {
+    public MercadoPagoPaymentRequest(
+            String paymentMethodId,
+            String paymentMethodType,
+            String token,
+            Integer installments,
+            String payerEmail,
+            String idempotencyKey
+    ) {
+        this(paymentMethodId, paymentMethodType, token, installments, payerEmail, null, null, idempotencyKey);
+    }
 }
