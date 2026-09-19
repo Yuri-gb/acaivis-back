@@ -47,6 +47,8 @@ public class MercadoPagoDebitService {
         paymentMethod.put("id", normalizeDebitPaymentMethodId(pagamento.paymentMethodId()));
         paymentMethod.put("type", "debit_card");
         paymentMethod.put("token", pagamento.token());
+        // Débito é uma única cobrança; a Orders API espera o número de parcelas.
+        paymentMethod.put("installments", 1);
 
         Map<String,Object> payment = new HashMap<>();
         payment.put("amount", valorTotal.toPlainString());
