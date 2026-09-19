@@ -196,6 +196,20 @@ public class OrderService {
         return to(saved);
     }
 
+    @Transactional
+    public Order getEntity(Long id) {
+        return orders.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Pedido não encontrado: " + id
+                ));
+    }
+
+    @Transactional
+    public void saveApprovedPayment(Order order) {
+        Order saved = orders.save(order);
+        registrarHistoricoPagamentoAprovado(saved);
+    }
+
     @Transactional(readOnly = true)
     public OrderResponse find(Long id) {
         return to(
