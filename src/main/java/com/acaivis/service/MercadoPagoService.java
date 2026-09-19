@@ -5,7 +5,10 @@ import com.acaivis.dto.payment.MercadoPagoPaymentResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -18,6 +21,7 @@ public class MercadoPagoService {
     private static final String ORDERS_URL = "https://api.mercadopago.com/v1/orders";
 
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${mercadopago.access-token}")
     private String accessToken;
@@ -74,12 +78,20 @@ public class MercadoPagoService {
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
-        ResponseEntity<Map> response = restTemplate.exchange(
-                ORDERS_URL,
-                HttpMethod.POST,
-                request,
-                Map.class
-        );
+        ResponseEntity<Map> response;
+        try {
+            response = restTemplate.exchange(
+                    ORDERS_URL,
+                    HttpMethod.POST,
+                    request,
+                    Map.class
+            );
+        } catch (HttpClientErrorException exception) {
+            if (exception.getStatusCode().value() == 402) {
+                return parseFailedPayment(exception.getResponseBodyAsString());
+            }
+            throw exception;
+        }
 
         Map<String, Object> responseBody = response.getBody();
         if (responseBody == null || responseBody.get("id") == null) {
@@ -109,6 +121,40 @@ public class MercadoPagoService {
                 string(paymentMethodResponse.get("ticket_url")),
                 expiresAt
         );
+    }
+
+    private MercadoPagoPaymentResponse parseFailedPayment(String responseBody) {
+        try {
+            Map<String, Object> root = objectMapper.readValue(
+                    responseBody,
+                    new TypeReference<Map<String, Object>>() {}
+            );
+            Map<String, Object> data = map(root.get("data"));
+            Map<String, Object> payment = firstPayment(data);
+            Map<String, Object> paymentMethod = map(payment.get("payment_method"));
+
+            return new MercadoPagoPaymentResponse(
+                    string(data.get("id")),
+                    string(payment.get("id")),
+                    string(payment.get("status"), data.get("status")),
+                    string(payment.get("status_detail"), data.get("status_detail")),
+                    string(paymentMethod.get("qr_code")),
+                    string(paymentMethod.get("qr_code_base64")),
+                    string(paymentMethod.get("ticket_url")),
+                    null
+            );
+        } catch (Exception parseException) {
+            return new MercadoPagoPaymentResponse(
+                    null,
+                    null,
+                    "failed",
+                    "provider_error",
+                    null,
+                    null,
+                    null,
+                    null
+            );
+        }
     }
 
     public Map<String, Object> buscarOrder(String orderId) {
