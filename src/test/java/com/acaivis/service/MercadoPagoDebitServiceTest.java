@@ -62,7 +62,7 @@ class MercadoPagoDebitServiceTest {
         Map<?, ?> payment = (Map<?, ?>) ((List<?>) transactions.get("payments")).get(0);
         Map<?, ?> method = (Map<?, ?>) payment.get("payment_method");
 
-        assertEquals("debelo", method.get("id"));
+        assertEquals("elo", method.get("id"));
         assertEquals("debit_card", method.get("type"));
         assertEquals("token-1", method.get("token"));
         assertEquals(1, method.get("installments"));
