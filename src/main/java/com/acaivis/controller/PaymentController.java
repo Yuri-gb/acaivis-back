@@ -12,6 +12,7 @@ import com.acaivis.repository.OrderRepository;
 import com.acaivis.service.MercadoPagoService;
 import com.acaivis.service.OrderService;
 import com.acaivis.service.CardCheckoutService;
+import com.acaivis.service.PaymentAttemptService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,7 @@ public class PaymentController {
     private final MercadoPagoService mercadoPago;
     private final OrderService orderService;
     private final CardCheckoutService cardCheckoutService;
+    private final PaymentAttemptService paymentAttemptService;
 
     @Value("${mercadopago.webhook-secret:}")
     private String webhookSecret;
@@ -45,12 +47,14 @@ public class PaymentController {
             OrderRepository orders,
             MercadoPagoService mercadoPago,
             OrderService orderService,
-            CardCheckoutService cardCheckoutService
+            CardCheckoutService cardCheckoutService,
+            PaymentAttemptService paymentAttemptService
     ) {
         this.orders = orders;
         this.mercadoPago = mercadoPago;
         this.orderService = orderService;
         this.cardCheckoutService = cardCheckoutService;
+        this.paymentAttemptService = paymentAttemptService;
     }
 
     @PostMapping("/orders/{orderId}")
@@ -128,7 +132,7 @@ public class PaymentController {
             MercadoPagoService mercadoPago,
             OrderService orderService
     ) {
-        this(orders, mercadoPago, orderService, null);
+        this(orders, mercadoPago, orderService, null, null);
     }
 
     @PostMapping("/card-checkout")
@@ -138,6 +142,16 @@ public class PaymentController {
     ) {
         return ResponseEntity.ok(
                 cardCheckoutService.checkout(request.order(), request.payment())
+        );
+    }
+
+    @GetMapping("/card-checkout/{mercadoPagoOrderId}")
+    @Transactional
+    public ResponseEntity<MercadoPagoCardCheckoutResponse> statusCheckoutCartao(
+            @PathVariable String mercadoPagoOrderId
+    ) {
+        return ResponseEntity.ok(
+                paymentAttemptService.status(mercadoPagoOrderId)
         );
     }
 
@@ -173,6 +187,11 @@ public class PaymentController {
 
         if (dataId != null && !dataId.isBlank()) {
             orderService.processarWebhookMercadoPago(dataId);
+
+            if (paymentAttemptService != null
+                    && orders.findByMercadoPagoOrderId(dataId).isEmpty()) {
+                paymentAttemptService.processWebhook(dataId);
+            }
         }
 
         return ResponseEntity.ok().build();

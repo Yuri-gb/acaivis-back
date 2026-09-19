@@ -28,19 +28,22 @@ public class CardCheckoutService {
     private final OrderRepository orders;
     private final MercadoPagoService mercadoPago;
     private final OrderService orderService;
+    private final PaymentAttemptService paymentAttempts;
 
     public CardCheckoutService(
             DeliveryZoneRepository zones,
             ProductRepository products,
             OrderRepository orders,
             MercadoPagoService mercadoPago,
-            OrderService orderService
+            OrderService orderService,
+            PaymentAttemptService paymentAttempts
     ) {
         this.zones = zones;
         this.products = products;
         this.orders = orders;
         this.mercadoPago = mercadoPago;
         this.orderService = orderService;
+        this.paymentAttempts = paymentAttempts;
     }
 
     @Transactional
@@ -99,6 +102,9 @@ public class CardCheckoutService {
         );
 
         if (!isApproved(payment.status())) {
+            if (isProcessing(payment.status())) {
+                paymentAttempts.register(orderRequest, total, payment);
+            }
             return new MercadoPagoCardCheckoutResponse(payment, null);
         }
 
@@ -116,6 +122,7 @@ public class CardCheckoutService {
         order.setPaymentConfirmed(true);
         order.setStatus(OrderStatus.PAID);
         orders.save(order);
+        orderService.registrarHistoricoPagamentoAprovado(order);
 
         return new MercadoPagoCardCheckoutResponse(
                 payment,
@@ -127,5 +134,14 @@ public class CardCheckoutService {
         return "processed".equalsIgnoreCase(status)
                 || "approved".equalsIgnoreCase(status)
                 || "accredited".equalsIgnoreCase(status);
+    }
+
+    private boolean isProcessing(String status) {
+        return status == null
+                || "created".equalsIgnoreCase(status)
+                || "processing".equalsIgnoreCase(status)
+                || "pending".equalsIgnoreCase(status)
+                || "in_process".equalsIgnoreCase(status)
+                || "action_required".equalsIgnoreCase(status);
     }
 }
