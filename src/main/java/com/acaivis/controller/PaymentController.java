@@ -2,6 +2,8 @@ package com.acaivis.controller;
 
 import com.acaivis.dto.payment.MercadoPagoPaymentRequest;
 import com.acaivis.dto.payment.MercadoPagoPaymentResponse;
+import com.acaivis.dto.payment.MercadoPagoCardCheckoutRequest;
+import com.acaivis.dto.payment.MercadoPagoCardCheckoutResponse;
 import com.acaivis.exception.BusinessException;
 import com.acaivis.exception.ResourceNotFoundException;
 import com.acaivis.model.Order;
@@ -9,6 +11,7 @@ import com.acaivis.model.OrderStatus;
 import com.acaivis.repository.OrderRepository;
 import com.acaivis.service.MercadoPagoService;
 import com.acaivis.service.OrderService;
+import com.acaivis.service.CardCheckoutService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +34,7 @@ public class PaymentController {
     private final OrderRepository orders;
     private final MercadoPagoService mercadoPago;
     private final OrderService orderService;
+    private final CardCheckoutService cardCheckoutService;
 
     @Value("${mercadopago.webhook-secret:}")
     private String webhookSecret;
@@ -38,11 +42,13 @@ public class PaymentController {
     public PaymentController(
             OrderRepository orders,
             MercadoPagoService mercadoPago,
-            OrderService orderService
+            OrderService orderService,
+            CardCheckoutService cardCheckoutService
     ) {
         this.orders = orders;
         this.mercadoPago = mercadoPago;
         this.orderService = orderService;
+        this.cardCheckoutService = cardCheckoutService;
     }
 
     @PostMapping("/orders/{orderId}")
@@ -113,6 +119,24 @@ public class PaymentController {
         }
 
         return ResponseEntity.ok(response);
+    }
+
+    public PaymentController(
+            OrderRepository orders,
+            MercadoPagoService mercadoPago,
+            OrderService orderService
+    ) {
+        this(orders, mercadoPago, orderService, null);
+    }
+
+    @PostMapping("/card-checkout")
+    @Transactional
+    public ResponseEntity<MercadoPagoCardCheckoutResponse> checkoutCartao(
+            @Valid @RequestBody MercadoPagoCardCheckoutRequest request
+    ) {
+        return ResponseEntity.ok(
+                cardCheckoutService.checkout(request.order(), request.payment())
+        );
     }
 
     @GetMapping("/orders/tracking/{trackingCode}")
