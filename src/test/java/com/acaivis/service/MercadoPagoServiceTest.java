@@ -144,6 +144,59 @@ class MercadoPagoServiceTest {
     }
 
     @Test
+    void deveMapearEloParaDebeloQuandoForCartaoDeDebito() throws Exception {
+        RestTemplate rt = mock(RestTemplate.class);
+        MercadoPagoService s = new MercadoPagoService();
+        field(s, "restTemplate", rt);
+        field(s, "accessToken", "token");
+
+        Map<String, Object> payment = Map.of(
+                "id", "pay-debelo-1",
+                "status", "processed",
+                "status_detail", "accredited",
+                "payment_method", Map.of(
+                        "id", "debelo",
+                        "type", "debit_card"
+                )
+        );
+
+        when(rt.exchange(
+                eq("https://api.mercadopago.com/v1/orders"),
+                eq(HttpMethod.POST),
+                any(HttpEntity.class),
+                eq(Map.class)
+        )).thenReturn(ResponseEntity.ok(Map.of(
+                "id", "ord-debelo-1",
+                "status", "processed",
+                "transactions", Map.of("payments", List.of(payment))
+        )));
+
+        var req = new MercadoPagoPaymentRequest(
+                "elo", "debit_card", "token-debelo-1", null, "x@y.com", "idem-debelo-1"
+        );
+
+        s.criarPagamento(new BigDecimal("25.00"), "card-debelo-test", req);
+
+        ArgumentCaptor<HttpEntity> c = ArgumentCaptor.forClass(HttpEntity.class);
+        verify(rt).exchange(
+                eq("https://api.mercadopago.com/v1/orders"),
+                eq(HttpMethod.POST),
+                c.capture(),
+                eq(Map.class)
+        );
+
+        Map<?, ?> body = (Map<?, ?>) c.getValue().getBody();
+        Map<?, ?> tx = (Map<?, ?>) body.get("transactions");
+        Map<?, ?> sent = (Map<?, ?>) ((List<?>) tx.get("payments")).get(0);
+        Map<?, ?> paymentMethod = (Map<?, ?>) sent.get("payment_method");
+
+        assertEquals("debelo", paymentMethod.get("id"));
+        assertEquals("debit_card", paymentMethod.get("type"));
+        assertEquals("token-debelo-1", paymentMethod.get("token"));
+        assertFalse(paymentMethod.containsKey("installments"));
+    }
+
+    @Test
     void naoDeveEnviarParcelasParaCartaoDeDebito() throws Exception {
         RestTemplate rt = mock(RestTemplate.class);
         MercadoPagoService s = new MercadoPagoService();
