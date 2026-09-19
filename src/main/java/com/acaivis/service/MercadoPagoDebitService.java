@@ -44,7 +44,7 @@ public class MercadoPagoDebitService {
                         ? UUID.randomUUID().toString() : pagamento.idempotencyKey());
 
         Map<String,Object> paymentMethod = new HashMap<>();
-        paymentMethod.put("id", pagamento.paymentMethodId());
+        paymentMethod.put("id", normalizeDebitPaymentMethodId(pagamento.paymentMethodId()));
         paymentMethod.put("type", "debit_card");
         paymentMethod.put("token", pagamento.token());
 
@@ -72,6 +72,13 @@ public class MercadoPagoDebitService {
                 return parseFailedPayment(exception.getResponseBodyAsString());
             throw exception;
         }
+    }
+
+    private String normalizeDebitPaymentMethodId(String paymentMethodId) {
+        if ("elo".equalsIgnoreCase(paymentMethodId)) {
+            return "debelo";
+        }
+        return paymentMethodId;
     }
 
     private MercadoPagoPaymentResponse parseFailedPayment(String responseBody) {
