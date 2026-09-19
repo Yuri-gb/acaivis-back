@@ -100,6 +100,18 @@ public class PaymentController {
 
         orders.save(order);
 
+        // Mercado Pago can already return a final result in the creation
+        // response. Persist that result immediately instead of waiting for
+        // the webhook to establish the first local state.
+        if (isPaid(response.status())) {
+            order.setPaymentConfirmed(true);
+            order.setStatus(OrderStatus.PAID);
+            orders.save(order);
+            orderService.registrarHistoricoPagamentoAprovado(order);
+        } else if (isRejected(response.status()) || isCancelled(response.status())) {
+            orderService.cancelarPagamentoFalho(orderId);
+        }
+
         return ResponseEntity.ok(response);
     }
 
@@ -138,6 +150,24 @@ public class PaymentController {
         }
 
         return ResponseEntity.ok().build();
+    }
+
+    private boolean isPaid(String status) {
+        return "approved".equalsIgnoreCase(status)
+                || "processed".equalsIgnoreCase(status)
+                || "accredited".equalsIgnoreCase(status);
+    }
+
+    private boolean isRejected(String status) {
+        return "rejected".equalsIgnoreCase(status)
+                || "refused".equalsIgnoreCase(status)
+                || "charged_back".equalsIgnoreCase(status);
+    }
+
+    private boolean isCancelled(String status) {
+        return "cancelled".equalsIgnoreCase(status)
+                || "canceled".equalsIgnoreCase(status)
+                || "expired".equalsIgnoreCase(status);
     }
 
     private boolean isValidSignature(
