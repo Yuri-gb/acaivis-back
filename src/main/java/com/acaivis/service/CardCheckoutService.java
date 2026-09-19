@@ -43,6 +43,7 @@ public class CardCheckoutService {
         this.orders = orders;
         this.mercadoPago = mercadoPago;
         this.orderService = orderService;
+        this.paymentAttempts = paymentAttempts;
     }
 
     @Transactional
