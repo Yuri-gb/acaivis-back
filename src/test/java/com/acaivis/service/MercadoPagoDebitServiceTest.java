@@ -39,7 +39,7 @@ class MercadoPagoDebitServiceTest {
 
         var request = new MercadoPagoPaymentRequest(
                 "elo", "debit_card", "token-1", null,
-                "cliente@teste.com", "idem-1"
+                "cliente@teste.com", "CPF", "12345678909", "idem-1"
         );
 
         var response = service.criarPagamento(
@@ -66,6 +66,12 @@ class MercadoPagoDebitServiceTest {
         assertEquals("debit_card", method.get("type"));
         assertEquals("token-1", method.get("token"));
         assertEquals(1, method.get("installments"));
+
+        Map<?, ?> payer = (Map<?, ?>) body.get("payer");
+        assertEquals("cliente@teste.com", payer.get("email"));
+        Map<?, ?> identification = (Map<?, ?>) payer.get("identification");
+        assertEquals("CPF", identification.get("type"));
+        assertEquals("12345678909", identification.get("number"));
     }
 
     @Test
