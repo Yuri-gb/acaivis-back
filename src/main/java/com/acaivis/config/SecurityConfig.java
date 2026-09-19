@@ -23,6 +23,7 @@ public class SecurityConfig {
         http.csrf(c -> c.disable()).cors(c -> c.configurationSource(cors()))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(a -> a
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/orders/tracking/*", "/api/payments/orders/tracking/*", "/api/payments/card-checkout/*", "/api/delivery/calculate").permitAll()
                         .requestMatchers("/api/auth/**", "/api/products", "/api/products/*", "/api/categories",
                                 "/api/delivery-zones", "/swagger-ui/**", "/swagger-ui.html", "/api-docs/**",
