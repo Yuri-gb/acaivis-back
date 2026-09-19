@@ -59,7 +59,16 @@ public class MercadoPagoDebitService {
         body.put("processing_mode", "automatic");
         body.put("total_amount", valorTotal.toPlainString());
         body.put("external_reference", referencia);
-        body.put("payer", Map.of("email", pagamento.payerEmail()));
+        Map<String,Object> payer = new HashMap<>();
+        payer.put("email", pagamento.payerEmail());
+        if (pagamento.payerIdentificationType() != null && !pagamento.payerIdentificationType().isBlank()
+                && pagamento.payerIdentificationNumber() != null && !pagamento.payerIdentificationNumber().isBlank()) {
+            payer.put("identification", Map.of(
+                    "type", pagamento.payerIdentificationType(),
+                    "number", pagamento.payerIdentificationNumber()
+            ));
+        }
+        body.put("payer", payer);
         body.put("transactions", Map.of("payments", List.of(payment)));
 
         try {
