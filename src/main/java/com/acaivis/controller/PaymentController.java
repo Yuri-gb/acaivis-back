@@ -161,6 +161,7 @@ public class PaymentController {
     private boolean isRejected(String status) {
         return "rejected".equalsIgnoreCase(status)
                 || "refused".equalsIgnoreCase(status)
+                || "failed".equalsIgnoreCase(status)
                 || "charged_back".equalsIgnoreCase(status);
     }
 
