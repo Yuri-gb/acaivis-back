@@ -16,7 +16,7 @@ import static org.mockito.Mockito.*;
 class MercadoPagoDebitServiceTest {
 
     @Test
-    void deveEnviarDebitoSemParcelasEComToken() throws Exception {
+    void deveEnviarDebitoComUmaParcelaEComToken() throws Exception {
         RestTemplate restTemplate = mock(RestTemplate.class);
         MercadoPagoDebitService service = new MercadoPagoDebitService(restTemplate);
         field(service, "accessToken", "token");
@@ -65,7 +65,7 @@ class MercadoPagoDebitServiceTest {
         assertEquals("debelo", method.get("id"));
         assertEquals("debit_card", method.get("type"));
         assertEquals("token-1", method.get("token"));
-        assertFalse(method.containsKey("installments"));
+        assertEquals(1, method.get("installments"));
     }
 
     @Test
