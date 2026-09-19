@@ -121,6 +121,14 @@ public class PaymentController {
         return ResponseEntity.ok(response);
     }
 
+    public PaymentController(
+            OrderRepository orders,
+            MercadoPagoService mercadoPago,
+            OrderService orderService
+    ) {
+        this(orders, mercadoPago, orderService, null);
+    }
+
     @PostMapping("/card-checkout")
     @Transactional
     public ResponseEntity<MercadoPagoCardCheckoutResponse> checkoutCartao(
