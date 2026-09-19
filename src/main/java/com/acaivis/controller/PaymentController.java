@@ -186,9 +186,10 @@ public class PaymentController {
         }
 
         if (dataId != null && !dataId.isBlank()) {
-            if (orders.findByMercadoPagoOrderId(dataId).isPresent()) {
-                orderService.processarWebhookMercadoPago(dataId);
-            } else {
+            orderService.processarWebhookMercadoPago(dataId);
+
+            if (paymentAttemptService != null
+                    && orders.findByMercadoPagoOrderId(dataId).isEmpty()) {
                 paymentAttemptService.processWebhook(dataId);
             }
         }
