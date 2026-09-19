@@ -49,7 +49,7 @@ public class MercadoPagoService {
                 : pagamento.idempotencyKey());
 
         Map<String, Object> paymentMethod = new HashMap<>();
-        paymentMethod.put("id", pix ? "pix" : normalizePaymentMethodId(pagamento.paymentMethodId(), pagamento.paymentMethodType()));
+        paymentMethod.put("id", pix ? "pix" : pagamento.paymentMethodId());
         paymentMethod.put("type", pix ? "bank_transfer" : pagamento.paymentMethodType());
 
         if (!pix && pagamento.token() != null && !pagamento.token().isBlank()) {
@@ -123,15 +123,6 @@ public class MercadoPagoService {
                 string(paymentMethodResponse.get("ticket_url")),
                 expiresAt
         );
-    }
-
-    private String normalizePaymentMethodId(String paymentMethodId, String paymentMethodType) {
-        if ("debit_card".equalsIgnoreCase(paymentMethodType)
-                && "elo".equalsIgnoreCase(paymentMethodId)) {
-            return "debelo";
-        }
-
-        return paymentMethodId;
     }
 
     private MercadoPagoPaymentResponse parseFailedPayment(String responseBody) {
