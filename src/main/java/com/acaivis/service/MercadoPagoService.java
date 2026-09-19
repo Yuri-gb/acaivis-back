@@ -7,6 +7,8 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -18,6 +20,7 @@ import java.util.*;
 @Service
 public class MercadoPagoService {
 
+    private static final Logger log = LoggerFactory.getLogger(MercadoPagoService.class);
     private static final String ORDERS_URL = "https://api.mercadopago.com/v1/orders";
 
     private final RestTemplate restTemplate;
@@ -80,6 +83,8 @@ public class MercadoPagoService {
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
+        log.info("Mercado Pago Orders request: {}", sanitizeForLog(body));
+
         ResponseEntity<Map> response;
         try {
             response = restTemplate.exchange(
@@ -123,6 +128,33 @@ public class MercadoPagoService {
                 string(paymentMethodResponse.get("ticket_url")),
                 expiresAt
         );
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> sanitizeForLog(Map<String, Object> body) {
+        Map<String, Object> sanitized = new LinkedHashMap<>(body);
+
+        sanitized.put("payer", Map.of("email", "<redacted>"));
+
+        Object transactionsValue = sanitized.get("transactions");
+        if (transactionsValue instanceof Map<?, ?> transactions) {
+            Object paymentsValue = transactions.get("payments");
+            if (paymentsValue instanceof List<?> payments && !payments.isEmpty()
+                    && payments.get(0) instanceof Map<?, ?> payment) {
+                Map<String, Object> paymentCopy = new LinkedHashMap<>((Map<String, Object>) payment);
+                Object methodValue = paymentCopy.get("payment_method");
+                if (methodValue instanceof Map<?, ?> method) {
+                    Map<String, Object> methodCopy = new LinkedHashMap<>((Map<String, Object>) method);
+                    if (methodCopy.containsKey("token")) {
+                        methodCopy.put("token", "<redacted>");
+                    }
+                    paymentCopy.put("payment_method", methodCopy);
+                }
+                sanitized.put("transactions", Map.of("payments", List.of(paymentCopy)));
+            }
+        }
+
+        return sanitized;
     }
 
     private String normalizePaymentMethodId(String paymentMethodId, String paymentMethodType) {
