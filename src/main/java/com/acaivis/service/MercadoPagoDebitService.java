@@ -47,6 +47,7 @@ public class MercadoPagoDebitService {
         paymentMethod.put("id", normalizeDebitPaymentMethodId(pagamento.paymentMethodId()));
         paymentMethod.put("type", "debit_card");
         paymentMethod.put("token", pagamento.token());
+        paymentMethod.put("installments", 1);
 
         Map<String,Object> payment = new HashMap<>();
         payment.put("amount", valorTotal.toPlainString());
@@ -57,12 +58,29 @@ public class MercadoPagoDebitService {
         body.put("processing_mode", "automatic");
         body.put("total_amount", valorTotal.toPlainString());
         body.put("external_reference", referencia);
-        body.put("payer", Map.of("email", pagamento.payerEmail()));
+
+        Map<String,Object> payer = new HashMap<>();
+        payer.put("email", pagamento.payerEmail());
+        if (pagamento.payerIdentificationType() != null
+                && !pagamento.payerIdentificationType().isBlank()
+                && pagamento.payerIdentificationNumber() != null
+                && !pagamento.payerIdentificationNumber().isBlank()) {
+            payer.put("identification", Map.of(
+                    "type", pagamento.payerIdentificationType(),
+                    "number", pagamento.payerIdentificationNumber()
+            ));
+        }
+
+        body.put("payer", payer);
         body.put("transactions", Map.of("payments", List.of(payment)));
 
         try {
-            ResponseEntity<Map> response = restTemplate.exchange(ORDERS_URL, HttpMethod.POST,
-                    new HttpEntity<>(body, headers), Map.class);
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    ORDERS_URL,
+                    HttpMethod.POST,
+                    new HttpEntity<>(body, headers),
+                    Map.class
+            );
             Map<String,Object> responseBody = response.getBody();
             if (responseBody == null || responseBody.get("id") == null)
                 throw new IllegalStateException("Mercado Pago não retornou uma order válida.");
@@ -121,5 +139,8 @@ public class MercadoPagoDebitService {
         Object value = first != null ? first : fallback;
         return value == null ? null : String.valueOf(value);
     }
-    private String string(Object value) { return value == null ? null : String.valueOf(value); }
+
+    private String string(Object value) {
+        return value == null ? null : String.valueOf(value);
+    }
 }
