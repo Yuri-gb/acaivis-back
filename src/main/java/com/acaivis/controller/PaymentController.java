@@ -40,6 +40,7 @@ public class PaymentController {
     @Value("${mercadopago.webhook-secret:}")
     private String webhookSecret;
 
+    @Autowired
     public PaymentController(
             OrderRepository orders,
             MercadoPagoService mercadoPago,
