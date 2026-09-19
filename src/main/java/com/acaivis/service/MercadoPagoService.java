@@ -157,6 +157,42 @@ public class MercadoPagoService {
         }
     }
 
+    public MercadoPagoPaymentResponse toPaymentResponse(Map<String, Object> responseBody) {
+        Map<String, Object> paymentResponse = firstPayment(responseBody);
+        Map<String, Object> paymentMethodResponse = map(paymentResponse.get("payment_method"));
+
+        String status = string(paymentResponse.get("status"), responseBody.get("status"));
+        String statusDetail = string(
+                paymentResponse.get("status_detail"),
+                responseBody.get("status_detail")
+        );
+
+        return new MercadoPagoPaymentResponse(
+                string(responseBody.get("id")),
+                string(paymentResponse.get("id")),
+                status,
+                statusDetail,
+                string(paymentMethodResponse.get("qr_code")),
+                string(paymentMethodResponse.get("qr_code_base64")),
+                string(paymentMethodResponse.get("ticket_url")),
+                null
+        );
+    }
+
+    public void reembolsarOrder(String orderId) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(accessToken);
+        headers.set("X-Idempotency-Key", UUID.randomUUID().toString());
+
+        restTemplate.exchange(
+                ORDERS_URL + "/" + orderId + "/refund",
+                HttpMethod.POST,
+                new HttpEntity<>(Map.of(), headers),
+                Map.class
+        );
+    }
+
     public Map<String, Object> buscarOrder(String orderId) {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);
