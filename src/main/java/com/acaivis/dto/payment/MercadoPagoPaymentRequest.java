@@ -17,6 +17,10 @@ public record MercadoPagoPaymentRequest(
         @NotBlank
         String payerEmail,
 
+        String payerIdentificationType,
+
+        String payerIdentificationNumber,
+
         String idempotencyKey
 
 ) {
