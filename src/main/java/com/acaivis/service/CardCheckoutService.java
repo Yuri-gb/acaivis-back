@@ -122,6 +122,7 @@ public class CardCheckoutService {
         order.setPaymentConfirmed(true);
         order.setStatus(OrderStatus.PAID);
         orders.save(order);
+        orderService.registrarHistoricoPagamentoAprovado(order);
 
         return new MercadoPagoCardCheckoutResponse(
                 payment,
