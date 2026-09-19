@@ -28,7 +28,7 @@ public class SecurityConfig {
                                 "/api/delivery-zones", "/swagger-ui/**", "/swagger-ui.html", "/api-docs/**",
                                 "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/orders").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/payments/orders/*", "/api/payments/webhook").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/payments/orders/*", "/api/payments/card-checkout", "/api/payments/webhook").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/products", "/api/products/upload-image", "/api/categories", "/api/delivery-zones").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/products/*", "/api/categories/*", "/api/delivery-zones/*").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/categories/*/reactivate", "/api/delivery-zones/*/reactivate").hasRole("ADMIN")
